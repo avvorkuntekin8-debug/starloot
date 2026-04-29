@@ -1,33 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StarLoot - Kazandır!</title>
+    <!-- SDK'lar -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://adsgram.ai/sdk-v1.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
-        .btn { background: #f39c12; color: white; padding: 20px; border-radius: 15px; border: none; font-size: 20px; }
+        :root {
+            --primary: #f39c12;
+            --bg: #0f0f0f;
+            --card: #1e1e1e;
+        }
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 80%;
+            max-width: 350px;
+            border: 1px solid #333;
+        }
+        .logo {
+            font-size: 60px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px var(--primary));
+        }
+        h1 { margin: 10px 0; font-size: 28px; letter-spacing: 1px; }
+        .score-box {
+            background: rgba(243, 156, 18, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 1px dashed var(--primary);
+        }
+        .score-label { font-size: 14px; color: #aaa; text-transform: uppercase; }
+        .score-value { font-size: 32px; font-weight: bold; color: var(--primary); }
+        .btn {
+            background: linear-gradient(45deg, #e67e22, #f39c12);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+        }
+        .btn:active { transform: scale(0.95); }
+        .status-text { font-size: 12px; color: #666; margin-top: 15px; }
     </style>
 </head>
 <body>
-    <h1>⭐ STARLOOT ⭐</h1>
-    <div id="game" style="display: block;">
-        <p>Puan: <span id="p">0</span></p>
-        <button class="btn" onclick="izle()">REKLAM İZLE</button>
+
+    <div class="container">
+        <div class="logo">⭐</div>
+        <h1>StarLoot</h1>
+        
+        <div class="score-box">
+            <div class="score-label">Toplam Kazanç</div>
+            <div class="score-value" id="puan-gosterge">0</div>
+        </div>
+
+        <button id="adBtn" class="btn" onclick="reklamBaslat()">📺 REKLAM İZLE</button>
+        <div class="status-text" id="status">Sistem Hazır</div>
     </div>
 
     <script>
-        function izle() {
-            console.log("Reklam isteği gönderildi...");
-            AdController.show().then(() => {
-                // Reklam başarıyla izlendiğinde burası çalışır
-                alert("Reklam başarıyla izlendi! Puanın eklendi.");
-                let puanElement = document.getElementById('p');
-                puanElement.innerText = parseInt(puanElement.innerText) + 10;
+        // 1. Telegram Başlatma
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // 2. Skor Yönetimi (Tarayıcı hafızasında saklar)
+        let mevcutPuan = parseInt(localStorage.getItem('userPuan') || '0');
+        document.getElementById('puan-gosterge').innerText = mevcutPuan;
+
+        // 3. Adsgram Başlatma
+        // ÖNEMLİ: blockId'nin tırnak içinde ve doğru olduğundan emin ol
+        const AdController = window.Adsgram.init({ blockId: "29014" });
+
+        function reklamBaslat() {
+            const btn = document.getElementById('adBtn');
+            const status = document.getElementById('status');
+
+            btn.disabled = true;
+            status.innerText = "Reklam yükleniyor...";
+
+            AdController.show().then((result) => {
+                // Başarılı izleme
+                mevcutPuan += 100; // Her reklam 100 puan
+                localStorage.setItem('userPuan', mevcutPuan);
+                document.getElementById('puan-gosterge').innerText = mevcutPuan;
+                
+                status.innerText = "Puan eklendi!";
+                btn.disabled = false;
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert("Harika! 100 Yıldız kazandın. ⭐");
             }).catch((error) => {
-                // Reklam yüklenemezse veya kullanıcı kapatırsa burası çalışır
-                console.error("Reklam Hatası:", error);
-                alert("Reklam şu an hazır değil veya hata oluştu. Hata: " + JSON.stringify(error));
+                // Hata durumu
+                console.error("Adsgram Hatası:", error);
+                btn.disabled = false;
+                status.innerText = "Hata: " + (error.description || "Reklam yok");
+                
+                tg.showAlert("Şu an reklam bulunamadı. Lütfen 1 dakika sonra tekrar dene.");
             });
         }
     </script>
