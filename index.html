@@ -1,86 +1,69 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StarLoot - Kazandır!</title>
+<title>Earn Clicker</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://adsgram.ai/sdk-v1.js"></script>
 
 <style>
-:root {
-    --primary: #f39c12;
-    --bg: #0a0a0a;
-    --card: #141414;
-}
-
 body {
-    background: radial-gradient(circle at top, #111, #000);
-    color: white;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    margin:0;
+    font-family:Arial;
+    background: radial-gradient(circle,#0f0f0f,#000);
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
 }
 
 .container {
-    background: var(--card);
-    padding: 25px;
-    border-radius: 20px;
-    width: 90%;
-    max-width: 350px;
-    text-align: center;
-    border: 1px solid #222;
-    box-shadow: 0 0 30px rgba(243,156,18,0.2);
+    width:90%;
+    max-width:350px;
+    background:#111;
+    border-radius:20px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 0 30px rgba(255,150,0,0.2);
 }
 
 .logo {
-    font-size: 55px;
-    text-shadow: 0 0 20px var(--primary);
+    font-size:50px;
+    text-shadow:0 0 15px orange;
 }
 
-h1 {
-    margin: 10px 0;
+.score {
+    font-size:30px;
+    color:orange;
+    margin:10px 0;
 }
 
-.score-box {
-    background: rgba(243,156,18,0.08);
-    border: 1px solid rgba(243,156,18,0.3);
-    border-radius: 15px;
-    padding: 15px;
-    margin: 20px 0;
-}
-
-.score-value {
-    font-size: 30px;
-    color: var(--primary);
-    font-weight: bold;
+.level {
+    font-size:14px;
+    color:#aaa;
 }
 
 .btn {
-    background: linear-gradient(45deg, #ff8c00, #ffb347);
-    border: none;
-    padding: 16px;
-    width: 100%;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 0 15px rgba(255,140,0,0.4);
+    margin-top:10px;
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    font-weight:bold;
+    background:linear-gradient(45deg,orange,gold);
+    cursor:pointer;
 }
 
-.btn:active {
-    transform: scale(0.95);
-}
+.btn:active { transform:scale(0.95); }
 
 .status {
-    font-size: 12px;
-    color: #888;
-    margin-top: 10px;
+    font-size:12px;
+    color:#888;
+    margin-top:10px;
 }
 </style>
 </head>
@@ -89,72 +72,123 @@ h1 {
 
 <div class="container">
     <div class="logo">⭐</div>
-    <h1>StarLoot</h1>
+    <h2>Earn Clicker</h2>
 
-    <div class="score-box">
-        <div>Toplam Kazanç</div>
-        <div class="score-value" id="puan">0</div>
-    </div>
+    <div class="score" id="puan">0</div>
+    <div class="level" id="level">Level 1</div>
 
-    <button class="btn" id="adBtn">📺 Reklam İzle</button>
+    <button class="btn" onclick="tikla()">🖱️ Tıkla</button>
+    <button class="btn" onclick="reklam()">📺 Reklam İzle (+100)</button>
+
     <div class="status" id="status">Hazır</div>
 </div>
 
 <script>
-// TELEGRAM INIT
+// TELEGRAM
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// PUAN
+// DATA
 let puan = parseInt(localStorage.getItem("puan") || "0");
-document.getElementById("puan").innerText = puan;
+let level = parseInt(localStorage.getItem("level") || "1");
+let clickValue = parseInt(localStorage.getItem("clickValue") || "1");
+let lastAd = parseInt(localStorage.getItem("lastAd") || "0");
+let dailyAds = parseInt(localStorage.getItem("dailyAds") || "0");
 
-// ADSGRAM INIT (DOĞRU KULLANIM)
+updateUI();
+
+// ADSGRAM
 let AdController;
-
 try {
     AdController = window.Adsgram.init({
-        blockId: 29014, // STRING DEĞİL NUMBER OLMASI DAHA SAĞLAM
+        blockId: 29014,
         debug: true
     });
-    console.log("Adsgram hazır");
-} catch (e) {
-    console.error("Adsgram init hatası:", e);
+} catch(e){
+    console.log(e);
+}
+
+// CLICK
+function tikla(){
+    puan += clickValue;
+    checkLevel();
+    save();
+    updateUI();
+}
+
+// LEVEL SYSTEM
+function checkLevel(){
+    let newLevel = Math.floor(puan / 500) + 1;
+
+    if(newLevel > level){
+        level = newLevel;
+        clickValue += 1;
+        tg.HapticFeedback.notificationOccurred("success");
+        alert("Level atladın! 🚀");
+    }
 }
 
 // REKLAM
-document.getElementById("adBtn").addEventListener("click", async () => {
+async function reklam(){
 
-    const btn = document.getElementById("adBtn");
-    const status = document.getElementById("status");
+    let status = document.getElementById("status");
+    let now = Date.now();
 
-    btn.disabled = true;
-    status.innerText = "Reklam yükleniyor...";
-
-    try {
-        // REKLAMI GÖSTER
-        await AdController.show();
-
-        // BAŞARILI
-        puan += 100;
-        localStorage.setItem("puan", puan);
-        document.getElementById("puan").innerText = puan;
-
-        status.innerText = "✔ 100 puan kazandın!";
-        tg.HapticFeedback.notificationOccurred("success");
-
-    } catch (err) {
-
-        console.error(err);
-
-        status.innerText = "❌ Reklam yok / hata";
-
-        tg.showAlert("Şu anda reklam bulunamadı. Biraz sonra tekrar dene.");
+    if(now - lastAd < 60000){
+        status.innerText = "⏳ 1 dakika bekle";
+        return;
     }
 
-    btn.disabled = false;
-});
+    status.innerText = "Reklam aranıyor...";
+
+    try{
+
+        let canShow = await AdController.canShow();
+
+        if(!canShow){
+            status.innerText = "😢 Reklam yok, tıkla!";
+            return;
+        }
+
+        await AdController.show();
+
+        puan += 100;
+        dailyAds += 1;
+        lastAd = now;
+
+        tg.HapticFeedback.notificationOccurred("success");
+
+        // GÜNLÜK GÖREV
+        if(dailyAds >= 3){
+            puan += 200;
+            dailyAds = 0;
+            alert("🎁 Günlük görev tamamlandı +200!");
+        }
+
+    }catch(e){
+        console.log(e);
+        status.innerText = "❌ Reklam hatası";
+    }
+
+    save();
+    updateUI();
+}
+
+// SAVE
+function save(){
+    localStorage.setItem("puan", puan);
+    localStorage.setItem("level", level);
+    localStorage.setItem("clickValue", clickValue);
+    localStorage.setItem("lastAd", lastAd);
+    localStorage.setItem("dailyAds", dailyAds);
+}
+
+// UI
+function updateUI(){
+    document.getElementById("puan").innerText = puan;
+    document.getElementById("level").innerText = "Level " + level;
+}
 </script>
 
 </body>
