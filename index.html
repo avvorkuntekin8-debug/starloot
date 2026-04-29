@@ -17,18 +17,17 @@
     </div>
 
     <script>
-        // Telegram'ı zorla başlat
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        const AdController = window.Adsgram.init({ blockId: "29014" });
-
         function izle() {
+            console.log("Reklam isteği gönderildi...");
             AdController.show().then(() => {
-                alert("Tebrikler!");
-            }).catch(() => {
-                alert("Reklam şu an yok.");
+                // Reklam başarıyla izlendiğinde burası çalışır
+                alert("Reklam başarıyla izlendi! Puanın eklendi.");
+                let puanElement = document.getElementById('p');
+                puanElement.innerText = parseInt(puanElement.innerText) + 10;
+            }).catch((error) => {
+                // Reklam yüklenemezse veya kullanıcı kapatırsa burası çalışır
+                console.error("Reklam Hatası:", error);
+                alert("Reklam şu an hazır değil veya hata oluştu. Hata: " + JSON.stringify(error));
             });
         }
     </script>
